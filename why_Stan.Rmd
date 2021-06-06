@@ -1,0 +1,742 @@
+---
+title: "贝叶斯新统计与Stan"
+subtitle: "Bayesian Data Analysis using Stan"
+author: "王敏杰 "
+institute: "四川师范大学"
+date: "38552109@qq.com"
+fontsize: 11pt
+output: binb::metropolis
+section-titles: true
+#toc: true
+header-includes:
+    - \usepackage[fontset = fandol]{ctex}
+    - \input{header.tex}
+link-citations: yes
+colorlinks: yes
+linkcolor: red
+classoption: "dvipsnames,UTF8"
+---
+
+
+
+```{r setup, include=FALSE}
+options(digits = 3)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  out.width = "100%",
+  fig.align = "center",
+  fig.asp = 0.618, 
+  fig.width = 4,
+  fig.show = "hold"
+)
+
+knitr::knit_hooks$set(mysize = function(before, options, envir) {
+  if (before) 
+    return(options$size)
+})
+```
+
+
+
+```{r libraries, message=FALSE, warning=FALSE, echo = FALSE}
+library(tidyverse)
+library(tidybayes)
+library(rstan)
+library(loo)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+theme_set(bayesplot::theme_default())
+
+
+fit_normal    <- read_rds(here::here("fits", "fit_normal.rds"))
+fit_lognormal <- read_rds(here::here("fits", "fit_lognormal.rds"))
+fit_poisson   <- read_rds(here::here("fits", "fit_poisson.rds"))
+fit_binomial  <- read_rds(here::here("fits", "fit_binomial.rds"))
+```
+
+
+
+
+
+
+
+## 本节课的目的
+
+内容:
+
+- 什么是Stan
+- 为什么学Stan
+  - 案例
+- 如何开始
+
+
+准备：
+
+- 需要一点点的R或者python知识
+- 课件下载 <https://github.com/perlatex/why_stan>
+
+
+
+
+# Stan 是什么？
+
+## Stan 是什么？
+
+
+```{r echo=FALSE, out.width = '30%'}
+knitr::include_graphics("./images/stan_logo.png")
+```
+
+
+- [Stan](https://mc-stan.org/) 是一门统计编程语言，主要用于贝叶斯推断
+
+- Stan广泛应用于社会学、生物、物理、工程和商业等领域
+
+
+
+
+## Stan的历史
+
+名字的由来
+
+- 波兰犹太裔核物理学家 Stanislaw Ulam，在研究核武器时，发明了蒙特卡罗方法
+- 蒙特卡罗方法是什么呢? 以概率统计理论为指导的数值计算方法
+
+
+
+
+
+
+开发团队
+
+- 贝叶斯界用这种蒙特卡罗方法开发一套程序，并用它创始人的名字Stan命名
+- 这套程序是由纽约哥伦比亚大学 Andrew Gelman 发起， 在[核心开发团队](https://mc-stan.org/about/team/)的共同努力下完成
+
+
+
+## Stan如何工作
+
+- Stan首先会把Stan代码翻译成C++，然后在本地编译
+- Stan拥有能支持自动差分的矩阵和数学库包
+- Stan提供了与（R，Python，shell，MATLAB，Julia，Stata）流行语言的接口
+   - 在R语言里用rstan
+   - 在python用PyStan
+
+
+
+
+# 为什么学Stan
+
+## Stan的优势
+
+相比于传统的方法来说，Stan模型
+
+- 更好的可操作性
+- 更好的透明性
+- 更好的可解释性
+
+
+对我们学术研究有什么好处？
+
+- 革新统计方法
+- 拓展研究视角 
+
+
+
+# 案例
+
+## 案例
+
+数据是不同天气温度冰淇淋销量
+
+```{r echo=FALSE}
+icecream <- tibble(
+  temp = c( 11.9, 14.2, 15.2, 16.4, 17.2, 18.1, 
+         18.5, 19.4, 22.1, 22.6, 23.4, 25.1),
+  units = c( 185L, 215L, 332L, 325L, 408L, 421L, 
+          406L, 412L, 522L, 445L, 544L, 614L)
+  )
+
+icecream %>% 
+  head(7) %>% 
+  knitr::kable()
+```
+
+\centering 我们想估计气温与销量之间的关系
+
+
+
+## 冰淇淋销量与天气温度
+
+```{r, echo = FALSE}
+icecream %>% 
+  ggplot(aes(temp, units)) + 
+  geom_point()
+```
+
+
+## 传统的方法
+
+在R语言中使用`lm()`
+\bigskip
+\bigskip
+
+```{r, eval=FALSE, echo=TRUE, mysize=TRUE, size='\\large'}
+lm(units ~ 1 + temp, data = icecream)
+```
+
+
+
+## 传统的方法
+```{r, mysize=TRUE, size='\\scriptsize'}
+fit_lm <- lm(units ~ 1 + temp, data = icecream)
+summary(fit_lm)
+```
+
+
+
+## 传统的方法
+```{r, echo = FALSE}
+icecream %>% 
+  ggplot(aes(temp, units)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red")
+```
+
+
+
+## 传统的方法
+
+```{r, eval=FALSE, echo=TRUE, mysize=TRUE, size='\\large'}
+lm(units ~ 1 + temp, data = icecream)
+```
+
+但是，我们不满意。不满意在于
+
+- 模型的假设？
+- 模型的参数？
+- 模型的解释？
+
+
+
+# 贝叶斯新统计
+
+## 线性模型
+
+线性回归需要满足四个前提假设：
+
+1. **Linearity **
+    - 因变量和每个自变量都是线性关系
+
+2. **Indpendence **
+    - 对于所有的观测值，它们的误差项相互之间是独立的
+
+3. **Normality **
+    - 误差项服从正态分布
+
+4. **Equal-variance **  
+    - 所有的误差项具有同样方差
+
+这四个假设的首字母，合起来就是**LINE**，这样很好记
+
+
+## 线性模型
+
+把这**四个前提**画在一张图中
+
+```{r, out.width = '80%', fig.align='center', echo = FALSE}
+knitr::include_graphics(here::here("images", "LINE.png"))
+```
+
+
+
+## 数学表达式
+
+线性模型
+
+$$
+y_n = \alpha + \beta x_n + \epsilon_n \quad \text{where}\quad
+\epsilon_n \sim \operatorname{normal}(0,\sigma).
+$$
+
+等价于
+
+$$
+y_n - (\alpha + \beta X_n) \sim \operatorname{normal}(0,\sigma),
+$$
+
+进一步等价
+
+$$
+y_n \sim \operatorname{normal}(\alpha + \beta X_n, \, \sigma).
+$$
+
+
+
+ 
+## 数学表达式
+
+我**强烈推荐**这样写线性模型的数学表达式
+
+\begin{align}
+y_n &\sim \operatorname{normal}(\mu_n, \,\, \sigma)\\
+\mu_n &= \alpha + \beta x_n 
+\end{align}
+
+
+因为，这种写法可以很方便地过渡到其它模型。（后面会看到）
+
+
+## Stan代码框架
+```{stan, output.var="ex1", eval = FALSE, mysize=TRUE, size='\\small'}
+
+data{
+        // 导入数据
+}
+parameters{
+        // 定义模型要估计的参数
+}
+model{
+        // 后验概率函数
+}
+
+```
+
+
+## 从模型到Stan代码
+
+```{r, out.width = '100%', fig.align = 'center', echo = FALSE}
+knitr::include_graphics(here::here("images", "from_model_to_code.png"))
+```
+
+
+## normal models
+
+
+```{stan, output.var="normal_models", eval = FALSE, mysize=TRUE, size='\\scriptsize'}
+data {
+  int<lower=0> N;
+  vector[N] y;
+  vector[N] x;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower=0> sigma;
+}
+model {
+  y ~ normal(alpha + beta * x, sigma);
+  
+  alpha  ~ normal(0, 4);
+  beta   ~ normal(0, 4);
+  sigma  ~ cauchy(0, 1);
+}
+```
+
+
+
+
+## normal models
+
+```{r, echo=FALSE, eval=FALSE}
+fit_normal %>% 
+  tidybayes::gather_draws(alpha, beta, sigma) %>% 
+  ggplot(aes(x = .value)) +
+  geom_density(alpha = 0.3, fill = "gray50") +
+  facet_wrap(vars(.variable), scales = "free") +
+  labs(x = NULL, y = NULL)
+```
+
+
+```{r, echo=FALSE, fig.width = 6, fig.asp = 0.3}
+fit_normal %>% 
+  bayesplot::mcmc_hist(pars = c("alpha", "beta", "sigma"))
+```
+
+
+```{r, echo=FALSE, mysize=TRUE, size='\\scriptsize'}
+summary(fit_normal)[["summary"]][c("alpha", "beta", "sigma"), 1:8] %>% 
+  knitr::kable()
+```
+
+
+
+## normal models
+
+```{r, echo = FALSE}
+p1 <- fit_normal %>% 
+  tidybayes::gather_draws(y_rep[i]) %>% 
+  mean_qi() %>% 
+  bind_cols(icecream) %>% 
+  
+  ggplot(aes(temp, units)) + 
+  geom_point(size = 3) +
+  geom_line(aes(y = .value), size = 2, color = "orange") +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.3, 
+              fill = "gray50"
+              ) +
+  ggtitle("1: normal models") +
+  theme_classic()
+p1
+```
+
+
+
+
+
+## log normal models
+
+有时候，我们对响应变量做log转化，
+
+\begin{align}
+\log(y_n) &\sim \operatorname{normal}(\mu_n, \,\, \sigma)\\
+\mu_n &= \alpha + \beta x_n 
+\end{align}
+
+等价于
+
+\begin{align}
+y_n &\sim \operatorname{Lognormal}(\mu_n, \,\, \sigma)\\
+\mu_n &= \alpha + \beta x_n 
+\end{align}
+
+
+
+
+## log normal models
+
+```{stan, output.var="lognormal_models", eval = FALSE, mysize=TRUE, size='\\scriptsize'}
+data {
+  int N;
+  int<lower=0> y[N];
+  vector[N] x;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower=0> sigma;
+}
+model {
+  y ~ lognormal(alpha + beta * x, sigma);
+   
+  alpha  ~ normal(0, 10);
+  beta   ~ normal(0, 10);
+  sigma  ~ exponential(1);
+}
+```
+
+
+## log normal models
+
+```{r, echo=FALSE, fig.width = 6, fig.asp = 0.3}
+fit_lognormal %>% 
+  bayesplot::mcmc_hist(pars = c("alpha", "beta", "sigma"))
+```
+
+
+
+```{r, echo=FALSE, mysize=TRUE, size='\\scriptsize'}
+summary(fit_lognormal)[["summary"]][c("alpha", "beta", "sigma"), 1:8] %>% 
+  knitr::kable()
+```
+
+
+
+## log normal models
+
+```{r, echo = FALSE}
+p2 <- fit_lognormal %>% 
+  tidybayes::gather_draws(y_rep[i]) %>% 
+  mean_qi() %>% 
+  bind_cols(icecream) %>% 
+  
+  ggplot(aes(temp, units)) + 
+  geom_point(size = 3) +
+  geom_line(aes(y = .value), size = 2, color = "orange") +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.3, 
+              fill = "gray50"
+              ) +
+  ggtitle("2: log normal models") +
+  theme_classic()
+p2
+```
+
+
+## Poisson Models
+
+冰激凌销量，是一种**计数类型**的变量，因此可以用泊松回归分析
+
+\begin{align}
+y_n &\sim \operatorname{Poisson}(\lambda_n)\\
+\log(\lambda_n) &= \alpha + \beta x_n 
+\end{align}
+
+
+
+
+## Poisson Models
+```{stan, output.var="poisson_models", eval = FALSE, mysize=TRUE, size='\\scriptsize'}
+data {
+  int N;
+  int<lower=0> y[N];
+  vector[N] x;
+}
+parameters {
+  real alpha;
+  real beta;
+}
+model {
+  y ~ poisson(alpha + beta * x);
+  
+  alpha  ~ normal(0, 10);
+  beta   ~ normal(0, 10);
+}
+```
+
+
+
+## Poisson Models
+
+```{r, echo=FALSE, fig.width = 6, fig.asp = 0.3}
+fit_poisson %>% 
+  bayesplot::mcmc_hist(pars = c("alpha", "beta"))
+```
+
+
+```{r, echo=FALSE, mysize=TRUE, size='\\scriptsize'}
+summary(fit_poisson)[["summary"]][c("alpha", "beta"), 1:8] %>% 
+  knitr::kable()
+```
+
+
+
+
+## Poisson Models
+
+```{r, echo = FALSE}
+p3 <- fit_poisson %>% 
+  tidybayes::gather_draws(y_rep[i]) %>% 
+  mean_qi() %>% 
+  bind_cols(icecream) %>% 
+  
+  ggplot(aes(temp, units)) + 
+  geom_point(size = 3) +
+  geom_line(aes(y = .value), size = 2, color = "orange") +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.3, 
+              fill = "gray50"
+              ) +
+  ggtitle("3: Poisson Models") +
+  theme_classic()
+p3
+```
+
+
+
+
+## binomal models
+
+泊松分布可看成是二项分布的极限，因此可以使用更灵活的二项式回归模型
+
+\begin{align}
+y_n &\sim \operatorname{binomial}(N, \theta_n)\\
+\text{logit}(\theta_n) &= \operatorname{log}\Big(\frac{\theta_{n}}{1 - \theta_{n}}\Big) =\alpha + \beta x_n 
+\end{align}
+
+
+## binomal models
+
+```{stan, output.var="binomal_models", eval = FALSE, mysize=TRUE, size='\\scriptsize'}
+data {
+  int<lower=1> N;
+  int<lower=1> trials;
+  vector[N] x;
+  int y[N];
+  real new_x;
+}
+parameters {
+  real alpha;
+  real beta;
+}
+model {
+  y ~ binomial_logit(trials, alpha + beta * x);
+  
+  alpha  ~ cauchy(0, 5);
+  beta   ~ normal(0, 5);
+} 
+
+```
+
+
+
+## binomal models
+
+```{r, echo=FALSE, fig.width = 6, fig.asp = 0.3}
+fit_binomial %>% 
+  bayesplot::mcmc_hist(pars = c("alpha", "beta"))
+```
+
+
+```{r, echo=FALSE, mysize=TRUE, size='\\scriptsize'}
+summary(fit_binomial)[["summary"]][c("alpha", "beta"), 1:8] %>% 
+  knitr::kable()
+```
+
+
+
+
+
+
+## binomal models
+
+```{r, echo = FALSE}
+p4 <- fit_binomial %>% 
+  tidybayes::gather_draws(y_rep[i]) %>% 
+  mean_qi() %>% 
+  bind_cols(icecream) %>% 
+  
+  ggplot(aes(temp, units)) + 
+  geom_point(size = 3) +
+  geom_line(aes(y = .value), size = 2, color = "orange") +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.3, 
+              fill = "gray50"
+              ) +
+  ggtitle("4: binomal models") +
+  theme_classic()
+p4
+```
+
+
+
+## 模型比较
+
+衡量预测准确性，可以用loo宏包[比较模型](http://mc-stan.org/loo/articles/loo2-with-rstan.html)
+
+
+```{r, echo = FALSE, mysize=TRUE, size='\\scriptsize'}
+loo_normal    <- loo(extract_log_lik(fit_normal))
+loo_lognormal <- loo(extract_log_lik(fit_lognormal))
+loo_poisson   <- loo(extract_log_lik(fit_poisson))
+loo_binomial  <- loo(extract_log_lik(fit_binomial))
+```
+
+```{r}
+loo_compare(loo_normal, 
+            loo_lognormal, 
+            loo_poisson, 
+            loo_binomial)
+```
+
+
+结果显示：
+
+- 第二个模型`lognormal`相对最优
+- 这个负数，代表该模型比最优秀的模型，预测能力差了多少
+
+
+
+
+
+## 模型可视化
+
+```{r, echo = FALSE, fig.width = 8}
+library(patchwork)
+p1 + p2 + p3 + p4 +
+  plot_layout(nrow = 2)
+```
+
+
+
+## 更多
+
+Stan 可以做更多：
+
+- 假设检验
+- 线性模型
+- 广义线性模型
+- 多层模型
+- 混合模型
+- 高斯过程
+- 时间序列
+- 机器学习
+- 常微分方程
+
+
+
+
+
+# 如何开始
+
+## 配置环境
+
+- 第1步，安装[R](http://cran.r-project.org)
+
+- 第2步，安装[Rstudio](https://www.rstudio.com/download)
+
+
+
+## 配置环境
+
+- 第3步，安装[Rtools4.0](https://cran.r-project.org/bin/windows/Rtools/)到`C`盘
+
+- 第4步，添加系统路径(电脑 - 属性 - 高级系统设置 - 环境变量 - 系统变量 - Path) 
+  - `C:\rtools40`
+  - `C:\rtools40\mingw64\bin`
+  - `C:\rtools40\usr\bin`
+  
+- 第5步，配置
+
+```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'}
+writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
+```
+
+
+## 配置环境
+
+- 第6步，安装rstan宏包
+
+```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'}
+install.packages(c("StanHeaders", "rstan"), type = "source")
+install.packages(c("tidyverse", "tidybayes", "bayesplot"))
+```
+
+\normalsize
+
+- 第7步，遇到问题，请参考
+ 
+<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>
+
+
+
+
+
+
+## 欢迎来到新世界
+
+```{r echo=FALSE, out.width = '100%'}
+knitr::include_graphics("./images/stan_logo_wide.png")
+```
+\centering \url{https://mc-stan.org/}
+
+
+
+## 欢迎关注选课信息
+
+
+| 课程                      	| 内容         	| 时间   	|
+|---------------------------	|--------------	|--------	|
+| 《数据科学中的R语言(上)》 	| R, tidyverse 	| 上学期 	|
+| 《数据科学中的R语言(下)》 	| Stan概率编程 	| 下学期 	|
+
+
+\medskip
+\centering 王敏杰
+
+\centering 38552109\color{red}{@}qq.com
+
+
+
+
+
