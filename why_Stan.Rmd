@@ -100,19 +100,14 @@ knitr::include_graphics("./images/stan_logo.png")
 
 ## Stan的历史
 
-名字的由来
+Stan名字的由来
 
 - 波兰犹太裔核物理学家 Stanislaw Ulam，在研究核武器时，发明了蒙特卡罗方法
 - 蒙特卡罗方法是什么呢? 以概率统计理论为指导的数值计算方法
-
-
-
-
-
-
-开发团队
-
 - 贝叶斯界用这种蒙特卡罗方法开发一套程序，并用它创始人的名字Stan命名
+
+Stan开发团队
+
 - 这套程序是由纽约哥伦比亚大学 Andrew Gelman 发起， 在[核心开发团队](https://mc-stan.org/about/team/)的共同努力下完成
 
 
@@ -120,11 +115,14 @@ knitr::include_graphics("./images/stan_logo.png")
 ## Stan如何工作
 
 - Stan首先会把Stan代码翻译成C++，然后在本地编译
+
 - Stan拥有能支持自动差分的矩阵和数学库包
+
 - Stan提供了与（R，Python，shell，MATLAB，Julia，Stata）流行语言的接口
    - 在R语言里用rstan
    - 在python用PyStan
-
+   
+- **Stan可以当作你已经掌握的数据分析工具的一种插件、一种扩展和增强。**
 
 
 
@@ -135,9 +133,19 @@ knitr::include_graphics("./images/stan_logo.png")
 相比于传统的方法来说，Stan模型
 
 - 更好的可操作性
+  - 从模型表达式到代码，更符合人的直觉
+  - 模型灵活性。修改几行代码，就转化成一个新的模型 
+ 
 - 更好的透明性
+  - 模型的假设
+  - 模型的参数
+  
 - 更好的可解释性
+  - 从贝叶斯公式出发，解释起来更符合常识
 
+
+
+## Stan的优势
 
 对我们学术研究有什么好处？
 
