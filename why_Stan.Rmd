@@ -79,7 +79,59 @@ fit_binomial  <- read_rds(here::here("fits", "fit_binomial.rds"))
 - 课件下载 <https://github.com/perlatex/why_stan>
 
 
+# 贝叶斯数据分析
 
+## What is it? 
+
+>"Bayesian inference is **reallocation** of **credibility** across **possibilities**." ([@kruschke2014], p. 15)
+
+\medskip
+
+>"Bayesian data analysis takes a **question** in the form of a **model** and uses **logic** to produce an **answer** in the form of **probability distributions**." ([@mcelreath2020], p. 10)
+
+\medskip
+
+>"Bayesian inference is the **process** of **fitting** a **probability** **model** to a set of **data** and summarizing the result by a **probability distribution on the parameters** of the model and on **unobserved quantities** such as predictions for new observations." ([@gelman2013], p. 1)
+
+
+## 贝叶斯推断 
+
+- What are the plausible values of parameters $\theta$ after observing data?
+- The posterior distribution $p(\theta \vert Y)$ is the answer
+- Bayes' theorem describes how to compute this distribution
+
+$$
+p(\theta \vert Y) = \frac{p(Y \vert \theta) p(\theta)}{p(Y)}
+$$
+
+- $p(Y \vert \theta)$ is the likelihood function
+  - Probability of data given specific values for the model's parameters
+- $p(\theta)$ is the prior probability distribution on the parameters
+  - How is plausibility distributed across possibilities before seeing data
+- $p(Y)$ is the marginal likelihood of the data
+  - Ignored here
+
+$$
+p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta).
+$$
+
+## 贝叶斯推断 
+
+$$
+p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta)
+$$
+
+Need to specify how the likelihood of each data point contributes to the parameters' overall probability:
+
+$$
+p(\theta \vert Y) \propto p(\theta) \prod^N_{n=1} p(y_n \vert \theta)
+$$
+
+In terms of programming, we think of adding up the log probabilities of each observation:
+
+$$
+\text{log}\ p(\theta \vert Y) \propto \text{log}\ p(\theta) + \sum^N_{n=1} \text{log}\ p(y_n \vert \theta)
+$$
 
 # Stan 是什么？
 
@@ -115,6 +167,8 @@ Stan开发团队
 ## Stan如何工作
 
 - Stan首先会把Stan代码翻译成C++，然后在本地编译
+
+- Stan用的是Hamiltonian Monte Carlo技术的 No-U-turn 采样器
 
 - Stan拥有能支持自动差分的矩阵和数学库包
 
@@ -728,22 +782,27 @@ knitr::include_graphics("./images/stan_logo_wide.png")
 ```
 \centering \url{https://mc-stan.org/}
 
+## References
+
+- Gelman, Andrew, John B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. Bayesian Data Analysis, Third Edition. Boca Raton: Chapman; Hall/CRC.
+
+- Kruschke, John K. 2014. Doing Bayesian Data Analysis: A Tutorial Introduction with R. 2nd Edition. Burlington, MA: Academic Press.
+
+- McElreath, Richard. 2020. Statistical Rethinking: A Bayesian Course with Examples in R and Stan. 2nd ed. CRC Texts in Statistical Science. Boca Raton: Taylor; Francis, CRC Press.
+
+<!-- ## 欢迎关注选课信息 -->
 
 
-## 欢迎关注选课信息
+<!-- | 课程                      	| 内容         	| 时间   	| -->
+<!-- |---------------------------	|--------------	|--------	| -->
+<!-- | 《数据科学中的R语言(上)》 	| R, tidyverse 	| 上学期 	| -->
+<!-- | 《数据科学中的R语言(下)》 	| Stan概率编程 	| 下学期 	| -->
 
 
-| 课程                      	| 内容         	| 时间   	|
-|---------------------------	|--------------	|--------	|
-| 《数据科学中的R语言(上)》 	| R, tidyverse 	| 上学期 	|
-| 《数据科学中的R语言(下)》 	| Stan概率编程 	| 下学期 	|
+<!-- \medskip -->
+<!-- \centering 王敏杰 -->
 
-
-\medskip
-\centering 王敏杰
-
-\centering 38552109\color{red}{@}qq.com
-
+<!-- \centering 38552109\color{red}{@}qq.com -->
 
 
 
