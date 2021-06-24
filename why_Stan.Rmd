@@ -168,7 +168,8 @@ Stan开发团队
 
 - Stan首先会把Stan代码翻译成C++，然后在本地编译
 
-- Stan用的是Hamiltonian Monte Carlo技术的 No-U-turn 采样器
+- Stan 使用先进的采样技术，允许复杂的贝叶斯模型快速收敛
+<!-- - Stan用的是Hamiltonian Monte Carlo技术的 No-U-turn 采样器 -->
 
 - Stan拥有能支持自动差分的矩阵和数学库包
 
