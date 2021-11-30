@@ -749,7 +749,7 @@ Stan 可以做更多：
   - `C:\rtools40\mingw64\bin`
   - `C:\rtools40\usr\bin`
   
-- 第5步，配置
+- 第5步，[配置](https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows)
 
 ```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'}
 writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
@@ -758,18 +758,23 @@ writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
 
 ## 配置环境
 
-- 第6步，安装rstan宏包
+- 第6步，[安装rstan宏包](https://mc-stan.org/r-packages/)
 
-```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'}
-install.packages(c("StanHeaders", "rstan"), type = "source")
-install.packages(c("tidyverse", "tidybayes", "bayesplot"))
+```{r, eval=FALSE}
+remove.packages(c("rstan", "StanHeaders"))
+install.packages("rstan", 
+   repos = c("https://mc-stan.org/r-packages/", 
+             getOption("repos"))
+  )
+install.packages(c("tidybayes", "bayesplot"))
 ```
 
 \normalsize
 
 - 第7步，遇到问题，请参考
- 
-<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>
+  - <https://mc-stan.org/r-packages/>
+  - <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>
+
 
 
 
@@ -785,11 +790,11 @@ knitr::include_graphics("./images/stan_logo_wide.png")
 
 ## References
 
-- Gelman, Andrew, John B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. Bayesian Data Analysis, Third Edition. Boca Raton: Chapman; Hall/CRC.
+- Gelman, Andrew, John B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. _Bayesian Data Analysis_, Third Edition. Boca Raton: Chapman; Hall/CRC.
 
-- Kruschke, John K. 2014. Doing Bayesian Data Analysis: A Tutorial Introduction with R. 2nd Edition. Burlington, MA: Academic Press.
+- Kruschke, John K. 2014. _Doing Bayesian Data Analysis: A Tutorial Introduction with R_. 2nd Edition. Burlington, MA: Academic Press.
 
-- McElreath, Richard. 2020. Statistical Rethinking: A Bayesian Course with Examples in R and Stan. 2nd ed. CRC Texts in Statistical Science. Boca Raton: Taylor; Francis, CRC Press.
+- McElreath, Richard. 2020. _Statistical Rethinking: A Bayesian Course with Examples in R and Stan_. 2nd ed. CRC Texts in Statistical Science. Boca Raton: Taylor; Francis, CRC Press.
 
 <!-- ## 欢迎关注选课信息 -->
 
