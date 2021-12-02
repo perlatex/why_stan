@@ -96,38 +96,81 @@ fit_binomial  <- read_rds(here::here("fits", "fit_binomial.rds"))
 
 ## 贝叶斯推断 
 
-- What are the plausible values of parameters $\theta$ after observing data?
-- The posterior distribution $p(\theta \vert Y)$ is the answer
-- Bayes' theorem describes how to compute this distribution
+<!-- - What are the plausible values of parameters $\theta$ after observing data? -->
+<!-- - The posterior distribution $p(\theta \vert Y)$ is the answer -->
+<!-- - Bayes' theorem describes how to compute this distribution -->
+
+<!-- $$ -->
+<!-- p(\theta \vert Y) = \frac{p(Y \vert \theta) p(\theta)}{p(Y)} -->
+<!-- $$ -->
+
+<!-- - $p(Y \vert \theta)$ is the likelihood function -->
+<!--   - Probability of data given specific values for the model's parameters -->
+<!-- - $p(\theta)$ is the prior probability distribution on the parameters -->
+<!--   - How is plausibility distributed across possibilities before seeing data -->
+<!-- - $p(Y)$ is the marginal likelihood of the data -->
+<!--   - Ignored here -->
+
+<!-- $$ -->
+<!-- p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta). -->
+<!-- $$ -->
+
+<!-- ## 贝叶斯推断  -->
+
+<!-- $$ -->
+<!-- p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta) -->
+<!-- $$ -->
+
+<!-- Need to specify how the likelihood of each data point contributes to the parameters' overall probability: -->
+
+<!-- $$ -->
+<!-- p(\theta \vert Y) \propto p(\theta) \prod^N_{n=1} p(y_n \vert \theta) -->
+<!-- $$ -->
+
+<!-- In terms of programming, we think of adding up the log probabilities of each observation: -->
+
+<!-- $$ -->
+<!-- \text{log}\ p(\theta \vert Y) \propto \text{log}\ p(\theta) + \sum^N_{n=1} \text{log}\ p(y_n \vert \theta) -->
+<!-- $$ -->
+
+
+- 观察到样本数据后，如何推断总体分布的参数$\theta$？
+  - 可以用贝叶斯后验概率$p(\theta \vert Y)$来回答
+
+- 贝叶斯公式
 
 $$
 p(\theta \vert Y) = \frac{p(Y \vert \theta) p(\theta)}{p(Y)}
 $$
 
-- $p(Y \vert \theta)$ is the likelihood function
-  - Probability of data given specific values for the model's parameters
-- $p(\theta)$ is the prior probability distribution on the parameters
-  - How is plausibility distributed across possibilities before seeing data
-- $p(Y)$ is the marginal likelihood of the data
-  - Ignored here
+- $p(Y \vert \theta)$ 是似然函数
+  - 在给定参数后，数据出现的概率
+- $p(\theta)$ 参数的先验概率
+  - 在看到数据前，参数各种可能性的分布
+- $p(Y)$ 边际似然
+  - 忽略
+
+
 
 $$
 p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta).
 $$
 
-## 贝叶斯推断 
+
+## 贝叶斯推断
 
 $$
 p(\theta \vert Y) \propto p(Y \vert \theta) p(\theta)
 $$
 
-Need to specify how the likelihood of each data point contributes to the parameters' overall probability:
-
+这里把总体的似然函数，写成每个数据点的似然函数**连乘**的形式：
 $$
 p(\theta \vert Y) \propto p(\theta) \prod^N_{n=1} p(y_n \vert \theta)
 $$
 
-In terms of programming, we think of adding up the log probabilities of each observation:
+
+为了方便计算，我们两边取对数，连乘变成了连加。也就说，我们计算的log probabilities
+
 
 $$
 \text{log}\ p(\theta \vert Y) \propto \text{log}\ p(\theta) + \sum^N_{n=1} \text{log}\ p(y_n \vert \theta)
