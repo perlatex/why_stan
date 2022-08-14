@@ -1,6 +1,6 @@
 ---
 title: "贝叶斯新统计与Stan"
-subtitle: "Bayesian Data Analysis using Stan"
+subtitle: "Bayesian Data Analysis using R and Stan"
 author: "王敏杰 "
 institute: "四川师范大学"
 date: "38552109@qq.com"
@@ -188,7 +188,7 @@ knitr::include_graphics("./images/stan_logo.png")
 
 - [Stan](https://mc-stan.org/) 是一门统计编程语言，主要用于贝叶斯推断
 
-- Stan广泛应用于社会学、生物、物理、工程和商业等领域
+- Stan广泛应用于社会学、生物、医学、物理、工程和商业等领域
 
 
 
@@ -781,27 +781,28 @@ Stan 可以做更多：
 
 - 第2步，安装[Rstudio](https://www.rstudio.com/download)
 
+- 第3步，安装[Rtools42](https://cran.r-project.org/bin/windows/Rtools/)到`C:\rtools42`，
+(苹果系统可跳过)
 
 
 ## 配置环境
 
-- 第3步，安装[Rtools4.0](https://cran.r-project.org/bin/windows/Rtools/)到`C`盘
 
-- 第4步，添加系统路径(电脑 - 属性 - 高级系统设置 - 环境变量 - 系统变量 - Path) 
-  - `C:\rtools40`
-  - `C:\rtools40\mingw64\bin`
-  - `C:\rtools40\usr\bin`
+<!-- - 第4步，添加系统路径(电脑 - 属性 - 高级系统设置 - 环境变量 - 系统变量 - Path)  -->
+<!--   - `C:\rtools40` -->
+<!--   - `C:\rtools40\mingw64\bin` -->
+<!--   - `C:\rtools40\usr\bin` -->
   
-- 第5步，[配置](https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows)
+<!-- - 第5步，[配置](https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows) -->
 
-```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'}
-writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
-```
+<!-- ```{r, eval=FALSE, mysize=TRUE, size='\\scriptsize'} -->
+<!-- writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron") -->
+<!-- ``` -->
 
 
-## 配置环境
+<!-- ## 配置环境 -->
 
-- 第6步，[安装rstan宏包](https://mc-stan.org/r-packages/)
+- 第4步，[安装rstan宏包](https://mc-stan.org/r-packages/)
 
 ```{r, eval=FALSE}
 remove.packages(c("rstan", "StanHeaders"))
@@ -814,7 +815,7 @@ install.packages(c("tidybayes", "bayesplot"))
 
 \normalsize
 
-- 第7步，遇到问题，请参考
+- 第5步，遇到问题，请参考
   - <https://mc-stan.org/r-packages/>
   - <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>
 
@@ -831,7 +832,7 @@ knitr::include_graphics("./images/stan_logo_wide.png")
 ```
 \centering \url{https://mc-stan.org/}
 
-## References
+## 参考书籍
 
 - Gelman, Andrew, John B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. _Bayesian Data Analysis_, Third Edition. Boca Raton: Chapman; Hall/CRC.
 
