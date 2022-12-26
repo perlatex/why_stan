@@ -1,0 +1,233 @@
+---
+title: "不同天气温度冰淇淋销量"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: flatly
+    highlight: pygments
+    code_download: true
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: paged
+---
+
+
+
+```{r setup, include=FALSE}
+options(digits = 3)
+knitr::opts_chunk$set(
+  cache     = TRUE,
+  echo      = TRUE,
+  collapse  = TRUE,
+  message   = FALSE,
+  warning   = FALSE,
+  out.width = "100%",
+  fig.align = "center",
+  fig.asp   = 0.618, 
+  fig.width = 4,
+  fig.show  = "hold"
+)
+```
+
+
+
+
+```{r libraries, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(tidybayes)
+library(ggdist)
+library(cmdstanr)
+check_cmdstan_toolchain(fix = TRUE, quiet = TRUE)
+```
+
+
+
+
+
+# 数据 
+
+```{r}
+icecream <- data.frame(
+  temp = c( 11.9, 14.2, 15.2, 16.4, 17.2, 18.1, 
+         18.5, 19.4, 22.1, 22.6, 23.4, 25.1),
+  units = c( 185L, 215L, 332L, 325L, 408L, 421L, 
+          406L, 412L, 522L, 445L, 544L, 614L)
+  )
+```
+
+
+
+```{r}
+ggplot(icecream, aes(temp, units)) + 
+  geom_point()
+```
+
+
+# 传统的方法
+
+探索冰淇淋销量与天气温度，在R语言中使用`lm()`
+
+```{r}
+fit_lm <- lm(units ~ 1 + temp, data = icecream)
+summary(fit_lm)
+```
+
+
+
+```{r}
+confint(fit_lm, level = 0.95)
+```
+
+
+但是，我们不满意，不满意在于
+
+- 模型的假设？
+- 模型的参数？
+- 模型的解释？
+
+
+
+
+
+# 贝叶斯建模
+
+## linear models
+
+线性模型
+
+$$
+\begin{align}
+y_n &\sim \operatorname{normal}(\mu_n, \,\, \sigma)\\
+\mu_n &= \alpha + \beta x_n \\
+\alpha  &\sim  \operatorname{normal}(0, 4) \\
+\beta  &\sim  \operatorname{normal}(0, 4)\\
+\sigma  &\sim \operatorname{half-Cauchy}(1)
+\end{align}
+$$
+
+
+```{r, cache=TRUE, message=FALSE, warning=FALSE, results='hide'}
+stan_program <- write_stan_file("
+data {
+  int N;
+  int<lower=0> y[N];
+  vector[N] x;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower=0> sigma;
+}
+model {
+
+  for(i in 1:N) {
+    target += normal_lpdf(y[i] | alpha + beta * x[i], sigma);
+  }
+  alpha  ~ normal(0, 10);
+  beta   ~ normal(0, 10);
+  sigma  ~ exponential(1);
+}
+generated quantities {
+  vector[N] y_rep;
+  vector[N] log_lik;
+  for (n in 1:N) {
+    y_rep[n] = normal_rng(alpha + beta * x[n], sigma);
+    log_lik[n] = normal_lpdf(y[n] | alpha + beta * x[n], sigma);
+  }
+}
+
+")
+
+stan_data <- icecream %>%
+  tidybayes::compose_data(
+   N = n,
+   x = temp, 
+   y = units
+  )
+
+mod <- cmdstan_model(stan_file = stan_program)
+fit <- mod$sample(data = stan_data)
+```
+
+```{r}
+fit$print()
+```
+
+```{r}
+fit$summary(variables = c("alpha", "beta", "sigma"), "median", "mean", "sd")
+```
+
+
+
+```{r}
+draws_df <- fit$draws(format = "df")
+str(draws_df)
+```
+
+
+
+
+```{r}
+bayesplot::mcmc_hist(fit$draws(c("alpha", "beta", "sigma")))
+```
+
+
+```{r}
+y_rep <- fit$draws(variables = "y_rep", format = "matrix")
+bayesplot::ppc_dens_overlay(y = stan_data$units, yrep = y_rep[1:200, ])
+```
+
+
+```{r}
+y_rep <- fit$draws(variables = "y_rep", format = "matrix")
+bayesplot::ppc_intervals(y = stan_data$units, 
+                         yrep = y_rep, 
+                         x = stan_data$temp
+                         ) 
+```
+
+
+
+
+```{r}
+fit %>% 
+  tidybayes::gather_draws(y_rep[i]) %>% 
+  mean_qi() %>% 
+  bind_cols(icecream) %>% 
+  
+  ggplot(aes(temp, units)) + 
+  geom_point(size = 5) +
+  geom_line(aes(y = .value), size = 2, color = "orange") +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.3, 
+              fill = "gray50"
+              ) +
+  theme_classic()
+```
+
+
+
+```{r}
+fit$summary(variables = "beta", "median")
+```
+
+```{r}
+fit %>%
+  tidybayes::gather_draws(beta) %>%
+  ggplot(aes(x = .value)) +
+  ggdist::stat_halfeye(
+    fill           = "skyblue",
+    point_interval = "median_qi",
+    .width         = c(0.6, 0.89),
+    interval_color = "red",
+    point_color    = "red"
+  ) +
+  geom_vline(
+    xintercept = fit$summary(variables = "beta", "median")$median, 
+    color = "red", 
+    linetype = "dashed"
+  ) +
+  labs(x = "beta", y = NULL)
+```
+
+
